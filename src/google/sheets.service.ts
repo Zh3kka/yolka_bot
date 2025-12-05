@@ -43,10 +43,6 @@ export class SheetsService {
           lines.push(`   Номер: нет`);
         }
 
-        if (child.giftWishes) {
-          lines.push(`   Подарок: ${child.giftWishes}`);
-        }
-
         return lines.join("\n");
       })
       .join("\n\n");

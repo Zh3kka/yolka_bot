@@ -23,13 +23,13 @@ const MESSAGES = {
   ASK_CHILDREN_COUNT: "Сколько детей придёт с вами?",
   ASK_CHILD_NAME: (index: number) => `Напишите имя ребёнка #${index + 1}:`,
   ASK_CHILD_AGE: (name: string) => `Сколько лет ${name}?`,
-  ASK_PERFORMANCE: `Каждый ребёнок может подготовить небольшой номер для выступления (песня, стихотворение, танец, все что угодно). За это он получит индивидуальный подарок 🎁 
+  ASK_PERFORMANCE: `🎁 Каждый ребёнок получит подарок от Деда Мороза!
 
-Если ваш ребёнок хочет участвовать, нажмите кнопку «Готовит номер». Если нет, нажмите кнопку «Пропустить».`,
+Также ребёнок может подготовить небольшой номер для выступления (песня, стихотворение, танец, всё что угодно).
+
+Если ваш ребёнок хочет выступить, нажмите «Готовит номер». Если нет — «Пропустить».`,
   ASK_PERFORMANCE_DESC:
     "Опишите, какой номер подготовит ребёнок (стих/танец/песня/поделка/что угодно):",
-  ASK_GIFT_WISHES: `Мы готовим для детей индивидуальные подарки!🎁 
-Пожалуйста, напишите пожелания для подарка вашему ребенку (что ему нравится / что бы он хотел):`,
   ASK_PHOTOS: `Отправьте, пожалуйста, СВОЁ фото из детского сада и одно актуальное фото.
 
 Мы сделаем тёплую новогоднюю подборку: посмотрим, какими мы были на утренниках в детстве — и какими классными стали сейчас.
@@ -172,8 +172,19 @@ export class BotUpdate {
       currentChild.hasPerformance = false;
     }
 
-    this.sessionService.setStep(telegramId, SessionStep.AWAITING_GIFT_WISHES);
-    await ctx.reply(MESSAGES.ASK_GIFT_WISHES);
+    session.currentChildIndex++;
+
+    if (session.currentChildIndex < (session.childrenCount || 0)) {
+      this.sessionService.setStep(telegramId, SessionStep.AWAITING_CHILD_NAME);
+      await ctx.reply(MESSAGES.ASK_CHILD_NAME(session.currentChildIndex));
+      return;
+    }
+
+    this.sessionService.setStep(
+      telegramId,
+      SessionStep.AWAITING_CHILDHOOD_PHOTO
+    );
+    await ctx.reply(MESSAGES.ASK_PHOTOS);
   }
 
   @On("text")
@@ -211,9 +222,6 @@ export class BotUpdate {
         break;
       case SessionStep.AWAITING_PERFORMANCE_DESCRIPTION:
         await this.handlePerformanceDescription(ctx, session, text);
-        break;
-      case SessionStep.AWAITING_GIFT_WISHES:
-        await this.handleGiftWishes(ctx, session, text);
         break;
       default:
         break;
@@ -408,22 +416,6 @@ export class BotUpdate {
     if (currentChild) {
       currentChild.hasPerformance = true;
       currentChild.performanceDescription = text;
-    }
-
-    this.sessionService.setStep(telegramId, SessionStep.AWAITING_GIFT_WISHES);
-    await ctx.reply(MESSAGES.ASK_GIFT_WISHES);
-  }
-
-  private async handleGiftWishes(
-    ctx: TelegrafContext,
-    session: ReturnType<SessionService["getSession"]>,
-    text: string
-  ): Promise<void> {
-    const telegramId = ctx.from!.id;
-    const currentChild = session.childrenData[session.currentChildIndex];
-
-    if (currentChild) {
-      currentChild.giftWishes = text;
     }
 
     session.currentChildIndex++;
